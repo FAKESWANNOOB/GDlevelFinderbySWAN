@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash Level Recommender</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background-color: #121214; color: #ffffff; padding: 20px; }
+        .container { max-width: 750px; margin: 0 auto; background: #1a1a1e; padding: 30px; border-radius: 12px; border: 1px solid #2a2a30; }
+        h1 { color: #2fec18; text-align: center; margin-bottom: 5px; text-transform: uppercase; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; font-size: 14px; }
+        
+        .test-box { background: #222227; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px dashed #444; text-align: center; }
+        .test-btn { background: #2fec18; color: #000; border: none; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; }
+        
+        textarea { width: 100%; height: 90px; background: #26262b; border: 2px solid #3a3a42; border-radius: 8px; color: white; padding: 12px; font-size: 16px; margin-bottom: 20px; resize: none; }
+        textarea:focus { outline: none; border-color: #2fec18; }
+        
+        .level-card { background: #222227; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 6px solid #2fec18; position: relative; }
+        .level-name { font-size: 18px; font-weight: bold; padding-right: 120px; }
+        .level-author { color: #aaa; font-size: 14px; font-weight: normal; }
+        .level-desc { margin-top: 8px; font-size: 14px; color: #ccc; line-height: 1.4; }
+        .no-results { text-align: center; color: #888; font-style: italic; padding: 20px 0; }
+        
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #333339;
+            color: #2fec18;
+            border: 1px solid #44444e;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background: #2fec18;
+            color: #000;
+        }
+    </style>
+    <script src="levels.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h1>GD Mega Finder</h1>
+    <p class="subtitle">Over 120+ Levels Loaded! Search by difficulty, creator, style, or type below.</p>
+    
+    <div class="test-box">
+        <p style="margin-bottom: 8px; font-size: 13px; color: #aaa;">Click presets to test:</p>
+        <button class="test-btn" onclick="forceSearch('zelda')">Zelda</button>
+        <button class="test-btn" onclick="forceSearch('bossfight')">Bossfights</button>
+        <button class="test-btn" onclick="forceSearch('beach')">Beach Top 1</button>
+        <button class="test-btn" onclick="forceSearch('platformer')">Platformers</button>
+    </div>
+
+    <label style="font-weight:bold; display:block; margin-bottom:8px;">Type your description here:</label>
+    <textarea id="description" placeholder="Start typing... (e.g. voxicat, beach, nine circles)"></textarea>
+
+    <h2 style="font-size:18px; color:#2fec18; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:5px;">Recommendations For You</h2>
+    <div id="results">
+        <p class="no-results">Start typing in the text box above to see recommendations...</p>
+    </div>
+</div>
+
+<script>
+    // Safe check if external levels.js file failed to load properly
+    if (typeof db === 'undefined') {
+        var db = [];
+    }
+
+    function runSearch(textInput) {
+        var cleanInput = textInput.toLowerCase().trim();
+        var resultsBox = document.getElementById('results');
+
+        if (cleanInput === "") {
+            resultsBox.innerHTML = '<p class="no-results">Start typing in the text box above to see recommendations...</p>';
+            return;
+        }
+
+        var HTMLOutput = "";
+        var matchCount = 0;
+
+        for (var i = 0; i < db.length; i++) {
+            var item = db[i];
+            if (item.tags.toLowerCase().indexOf(cleanInput) !== -1 || item.name.toLowerCase().indexOf(cleanInput) !== -1) {
+                matchCount++;
+                
+                HTMLOutput += '<div class="level-card">' +
+                    '<button class="copy-btn" onclick="copyId(this, \'' + item.id + '\')">ID: ' + item.id + '</button>' +
+                    '<div class="level-name">' + item.name + ' <span class="level-author">by ' + item.author + '</span></div>' +
+                    '<div style="font-size:12px; color:#2fec18; font-weight:bold; margin-top:3px; text-transform:uppercase;">' + item.difficulty + '</div>' +
+                    '<p class="level-desc">' + item.desc + '</p>' +
+                '</div>';
+            }
+        }
+
+        if (matchCount === 0) {
+            resultsBox.innerHTML = '<p class="no-results">No matches found. Try shorter keywords!</p>';
+        } else {
+            resultsBox.innerHTML = HTMLOutput;
+        }
+    }
+
+    function copyId(buttonElement, levelId) {
+        if(levelId === "Official") {
+            buttonElement.innerText = "No ID Needed";
+            return;
+        }
+        navigator.clipboard.writeText(levelId).then(function() {
+            buttonElement.innerText = "📋 Copied!";
+            buttonElement.style.background = "#2fec18";
+            buttonElement.style.color = "#000";
+            
+            setTimeout(function() {
+                buttonElement.innerText = "ID: " + levelId;
+                buttonElement.style.background = "#333339";
+                buttonElement.style.color = "#2fec18";
+            }, 1500);
+        }).catch(function() {
+            alert("Manual ID Copy: " + levelId);
+        });
+    }
+
+    document.getElementById('description').oninput = function() {
+        runSearch(this.value);
+    };
+
+    function forceSearch(keyword) {
+        document.getElementById('description').value = keyword;
+        runSearch(keyword);
+    }
+</script>
+
+</body>
+</html>
